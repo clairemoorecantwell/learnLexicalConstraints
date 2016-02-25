@@ -28,8 +28,13 @@ class UR:
 	def __init__(self,ur,prob=1,lexC=None):
 		self.ur = ur
 		self.prob = prob # Lexical frequency of this form
+		# Check if the probability can be sensibly converted to a float
+		try:
+			self.prob = float(prob)
+		except ValueError:
+			print "It looks like your token probabilities can't all be converted to floats.  Check if there's some text in that column"
 		self.candidates = []
-		if lexC is not None:
+		if lexC is None:
 			self.lexC = [] # This can later be filled with tuples
 		# e.g. (output, weight)
 		# it's important that output is a surface form, not a hidden structure
@@ -37,16 +42,23 @@ class UR:
 						   # this is the sum of each exponentiated harmony score
 		self.predProbsList = []
 		self.lastSeen = 0 # Keep track of what timestep the learner last saw this word
+	
 	def addCandidate(self,cand):
 		self.candidates.append(cand)
+
 	def decayLexC(self,t,decayRate,decayType='linear'):
 		if len(self.lexC>1):
 			if decayType=='linear':
 				for i in range(0,len(self.lexC)):
 					self.lexC[i][1]-=(t-self.lastSeen)*decayRate
+
 			if decayType=='logarithmic':
 				for i in range(0,len(self.lexC)):
 					self.lexC[i][1]-=pow(t-self.lastSeen,decayRate)
+
+			if self.lexC[i][1]<0: #If it's gotten as low as zero remove the constraint
+				self.lexC.remove(self.lexC[i])
+
 	def checkViolationLength(self): #check if all the violation vectors are the same length
 		pass
 	def calculateHarmony(self, w, t=None, decayRate=None, decayType=None): # Takes a vector of weights, equal in length to the violation vectors of the candidates
@@ -97,6 +109,7 @@ def readOTSoft(file):
 			print line
 			if lineno==0:
 				firstLine = line
+				print firstLine
 				if firstLine[1]=="":
 					# OTSoft file? They have empty cells at the top
 					pass
@@ -109,9 +122,12 @@ def readOTSoft(file):
 					# input output (hidden) probability (tab.prob) Constraint1 Constraint2 ...
 					offset = (3 if firstLine[2]=='hidden' else 2)
 					hidden = (True if firstLine[2]=='hidden' else False)
-					offset = offset + (2 if firstLine[offset+1]=='tab.prob' else 1)
 					tokenFrequency = (True if firstLine[offset+1]=='tab.prob' else False)
+					offset = offset + (2 if firstLine[offset+1]=='tab.prob' else 1)
 					constraints=firstLine[offset:]
+					print offset
+					print tokenFrequency
+					print constraints
 				else:
 					print "I can't tell what type of file this is :("
 
