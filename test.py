@@ -88,6 +88,9 @@ class Tableaux:
 		self.urList = []
 		self.urIDlist = []
 		self.theory = theory
+		self.constraints = []
+		self.w = []
+
 	def addUR(self,ur):
 		self.urList.append(ur)
 		self.urIDlist.append(ur.ur)
@@ -128,6 +131,7 @@ def readOTSoft(file):
 					print offset
 					print tokenFrequency
 					print constraints
+					tableaux.constraints = constraints
 				else:
 					print "I can't tell what type of file this is :("
 
