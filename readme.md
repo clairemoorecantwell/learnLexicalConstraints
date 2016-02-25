@@ -68,6 +68,10 @@ attributes:
 
 **theory:** Right now, only 'MaxEnt' is implemented
 
+**constraints:** List of names of the markedness/faithfulness constraints
+
+**w:** List of weights of the markedness/faithfulness constraints
+
 methods:
 
 `addUR(ur)` adds an object of class `UR` to the `Tableaux`
