@@ -9,17 +9,15 @@ use: `new_candidate = candidate(c,violations,observedProb,surfaceForm=None)`
 
 **violations:** list of violations
 
-**observedProb:** observed probability of this candidate, from 0-1 1 if it is the winner
-
 **surfaceForm:** for use in hidden structure situations, this is the surface form that corresponds to the actual candidate.  For example, a stress candidate might be (10)0, and its surface form 100.  The surface form for (1)00, which has a different violation profile, would also be 100.
 
-`candidate` also has the following attributes:
+**observedProb:** Value ranging from 0-1 indicating the observed probability of that candidate.  If this candidate is the sole observed output for its UR, this value should be 1.  If the candidate is never observed, this should be 0.  Except in hidden structure situations, these values for any given UR ought to sum to one.  Also, this is the value that whatever learning process will try to match.
 
-**harmony:** The candidate's harmony
+**predictedProb:** The predicted probability of that candidate given the current constraint weights and the theory you're using (e.g. MaxEnt) As of 25 Mar, 2016, only MaxEnt is implemented.  NOTE: This is calculated on the fly during learning.  If you're learning via sampling, this value will be whatever it was calculated to be last time predictProbs() was called on the parent UR.
 
-**predictedProb:** Candidate's predicted probability (to be compared at some point with `observedProb`)
+**harmony:** The harmony of the candidate, calculates by calling calculateHarmony() from the parent UR
 
-And, it has the following methods:
+`candidate` also has the following methods:
 
 `checkViolationsSign()` runs automatically on initialization of a new instance of the class, and converts violation profiles to negative floats.  It also converts blanks to 0's, but it will throw an error if any violations are made of text that can't be converted to floats.
 
@@ -38,7 +36,9 @@ use: `new_UR = UR(ur,prob=1,lexC=None)`
 
 **probDenom:** This is for calculating MaxEnt probability for candidates of this input.  It's just the denominator for that calculation: sum(e^(-H))
 
-**predProbsList:** List of each candidate's predicted probability, for use in sampling
+**predProbsList:** List of each candidate's predicted probability, `predictedProb`, for use in sampling
+
+**obsProbList:** List of each candidates observed probability, `observedProb`, for use in sampling
 
 **lastSeen:** For use in online learning, this is a tag that notes when the UR was last sampled.  It's used for decaying the lexically-specific constraints
 
@@ -54,7 +54,11 @@ use: `new_UR = UR(ur,prob=1,lexC=None)`
 
 `predictProbs(w,t=None,decayRate=None,decayType=None)` calculates the predicted probabilities of each candidate according to a vector of weights `w`.  Begins by calling `calculateHarmony`, which can call `decayLexC`, hence you can give it the appropriate parameters
 
-`getWinner(theory)` Get a winner.  **In progress**
+`getPredWinner(theory)` Get a winner based on your theory - if MaxEnt (currently the only one implemented), sample to get that winner.  Returns a string that's the actual surface form winner, as well as the entire candidate object that's the winner.
+
+`getObsWinner(theory)` Get an observed winner by sampling from the observed distribution over candidates.  If there's a sole observed winner, that one will always be returned by this function.  Returns a string that's the surface form of the observed winner, and also returns the entire candidate object.
+
+`compareObsPred(theory,w,t=None,decayRate=None,decayType=None)` Calls `getPredWinner` and `getObsWinner`, and compares the observed to the predicted winner to see if there's an error.  The function also calls `predictProbs`, which calls `calculateHarmony` and `decayLexC`, so altogether, it calculates the current values for the lexical constraints, and it calculates harmonies and probabilities given the current set of both general and lexical constraint weights, and then it samples and sees if the observed thing matches the predicted thing.  Returns whether or not there was an error (0 if no error, 1 if error), and the candidate objects for the observed candidate and the predicted candidate.  NOTE ON HIDDEN STRUCTURE:  **hidden structure still in progress.  check back later ** 
 
 ## Tableaux
 
