@@ -86,12 +86,22 @@ methods:
 
 `initializeWeights()` Initializes the weights to zero  *NOTE: need to fix this so that it can take arbitrary or random starting weights*
 
-`sample()` Uses `urProbsList` to sample a UR to update on
+`sample()` Uses `urProbsList` to sample a UR (for use in updating)
 
-`update(theory, learnRate, lexCstartW, decayRate=None, decayType=None)`
+`update(theory, learnRate, lexCstartW, decayRate=None, decayType=None)` Executes a single update iteration.  The steps of this are (1) sample a UR using `sample()`, (2) compare the predicted output given the current grammar to the observed outpus using `compareObsPred()`.  (3) If there's an error, first (3a) update the general constraints with `perceptronUpdate`, then (3b) update the lexC's.  If there's already a lexC favoring the observed form, increment it by the learning rate.  If there's any lexC's favoring a different surface form, decrement them by the learning rate.  If there's no lexC favoring the observed surface form, create one with weight *lexCstartW*  (4) Lastly, increment *t*.  The function returns the UR that was used, and whether or not there was an error (1 for error, 0 for no error)
 
-`epoch(theory, iterations, learnRate, lexCstartW, decayRate=None, decayType=None)`
+`epoch(theory, iterations, learnRate, lexCstartW, decayRate=None, decayType=None)` Runs `update()` *iterations* number of times.  Returns the error rate during the epoch, and two lists, one of lexCs and one of weights of those lexCs
+
+`learn(iterations, nEpochs, learnRate, lexCstartW, decayRate=None, decayType='linear', theory='MaxEnt')` Runs *nEpochs* epochs, each with *iterations* number of iterations.  
+
+`printTableau()` Prints the current tableaux to the command line
+
+`calcLikelihood()` Calculate log likelihood for the entire data set *NOT YET IMPLEMENTED*
+
+
 
 ## Functions:
 
 `readOTSoft(file)` Right now, this just has the capability to read in an hgr-style file and turn it into a Tableaux object, and to yell at you if the file type is wrong.
+
+`perceptronUpdate(error, target, weights, rate)` error and target should be violation vectors, weights should be a vector of weights, and rate is the learning rate.  Returns an updated weight vector.
