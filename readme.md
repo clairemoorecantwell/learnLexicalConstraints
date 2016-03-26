@@ -70,15 +70,27 @@ attributes:
 
 **urIDlist:** list of strings, that are the strings of the URs
 
+**urProbsList:** List of floats, aligned to the list of URs - each number is the 'lexical frequency' of that UR, or the weight at which you want it to be sampled for learning
+
 **theory:** Right now, only 'MaxEnt' is implemented
 
 **constraints:** List of names of the markedness/faithfulness constraints
 
 **w:** List of weights of the markedness/faithfulness constraints
 
+**t:** Current or last learning iteration
+
 methods:
 
 `addUR(ur)` adds an object of class `UR` to the `Tableaux`
+
+`initializeWeights()` Initializes the weights to zero  *NOTE: need to fix this so that it can take arbitrary or random starting weights*
+
+`sample()` Uses `urProbsList` to sample a UR to update on
+
+`update(theory, learnRate, lexCstartW, decayRate=None, decayType=None)`
+
+`epoch(theory, iterations, learnRate, lexCstartW, decayRate=None, decayType=None)`
 
 ## Functions:
 
