@@ -52,7 +52,8 @@ class UR:
 		self.predProbsList = []
 		self.obsProbsList = []
 		self.lastSeen = 0 # Keep track of what timestep the learner last saw this word
-	
+		self.nSeen = 0 # Keep track of how many times the UR has been seen
+
 	def addCandidate(self,cand):
 		self.candidates.append(cand)
 		self.obsProbsList.append(cand.observedProb)
@@ -77,10 +78,12 @@ class UR:
 
 	def calculateHarmony(self, w, t=None, decayRate=None, decayType=None): # Takes a vector of weights, equal in length to the violation vectors of the candidates
 		self.probDenom=0 # Reset probDenom
+		#print decayRate
 		if (decayRate is not None) and (t is None):
 			sys.exit("You have to pass a time parameter to the calculateHarmony if you're using a decay rate")
 		if decayRate is not None:
 			self.decayLexC(t,decayRate,decayType)
+			#print "decaying!"
 		for cand in self.candidates:
 			# dot product
 			cand.harmony = sum(viol*weight for viol,weight in zip(cand.violations,w))
@@ -92,7 +95,8 @@ class UR:
 			self.probDenom += pow(math.e,cand.harmony)
 
 	def predictProbs(self,w, t=None, decayRate=None, decayType=None):
-		self.calculateHarmony(w)
+		#print 'predictProbs: ', decayRate
+		self.calculateHarmony(w, t, decayRate, decayType)
 		self.predProbsList=[]
 		for cand in self.candidates:
 			cand.predictedProb = pow(math.e,cand.harmony)/self.probDenom
@@ -117,12 +121,13 @@ class UR:
 		return winner, winCandidate
 
 	def compareObsPred(self,theory,w, t=None, decayRate=None, decayType=None):
+		#print decayRate
 		if theory =='batchGD':
 			pass
 			# Have to do some kind of vector comparison for batch gradient descent
 		if theory =='MaxEnt':
-			print 'comparing...'
-			self.predictProbs(w, t=None, decayRate=None, decayType=None)
+			#print 'comparing...'
+			self.predictProbs(w, t, decayRate, decayType)
 			obs, obsCandidate=self.getObsWinner(theory) # Sample from observed distribution
 			pred, predCandidate=self.getPredWinner(theory) # Sample from predicted distribution
 			error = (0 if obs==pred else 1)
@@ -137,6 +142,7 @@ class Tableaux:
 		self.constraints = []
 		self.w = []
 		self.t = 0
+		self.initializeWeights()
 
 	def addUR(self,ur):
 		self.urList.append(ur)
@@ -154,8 +160,7 @@ class Tableaux:
 	def update(self,theory,learnRate,lexCstartW, decayRate=None, decayType=None):
 		# Sample an input form
 		theUR = self.sample()
-		print theUR.ur
-		theUR.lastSeen += 1
+
 		e, o, p = theUR.compareObsPred(theory,self.w, self.t, decayRate, decayType)
 		if e: # on error
 			# update general constraints with perceptron update
@@ -175,6 +180,9 @@ class Tableaux:
 			if not existsLexC: # if there's no lexical constraint for the observed output, make one
 				theUR.lexC.append([o.surfaceForm,lexCstartW])
 		self.t+=1
+		#print theUR.ur
+		theUR.lastSeen = self.t
+		theUR.nSeen += 1
 		return theUR, e #return the UR and whether or not there was an error
 
 	def epoch(self,theory,iterations,learnRate,lexCstartW, decayRate=None, decayType=None):
@@ -194,14 +202,20 @@ class Tableaux:
 				lexCws.append(j[1])
 		return errRate, lexCs, lexCws
 
+	def resetTime(self):
+		''' Resets time.  Sets Tableaux.t to 0, and also goes through each UR and resets its last seen time (UR.lastSeen) to 0'''
+		self.t = 0
+		for x in self.urList:
+			x.lastSeen = 0
+
 	def learn(self, iterations, nEpochs,learnRate,lexCstartW, decayRate=None, decayType='linear',theory='MaxEnt'):
 		self.initializeWeights()
-		self.t = 0
+		self.resetTime()
 		print "learning..."
 		if theory == 'MaxEnt':
 			snapshots = []
 			for n in range(0,nEpochs):
-				x,y,z = self.epoch(iterations,learnRate,lexCstartW,decayRate,decayType)
+				x,y,z = self.epoch(theory,iterations,learnRate,lexCstartW,decayRate,decayType)
 				snapshots.append([n,x,y,z])
 		return snapshots
 

@@ -105,3 +105,35 @@ methods:
 `readOTSoft(file)` Right now, this just has the capability to read in an hgr-style file and turn it into a Tableaux object, and to yell at you if the file type is wrong.
 
 `perceptronUpdate(error, target, weights, rate)` error and target should be violation vectors, weights should be a vector of weights, and rate is the learning rate.  Returns an updated weight vector.
+
+
+## To-Do list:
+
+* BUG: Each UR's lastSeen value doesn't get updated when tableaux.t gets reset.  This results in weights of the lexically specific constraints skyrocketing off to really high numbers, because you're subtracting a negative number in decayLexC
+
+* fix `printTableau()` so that it does something more visually appealing
+..* Have it print the first n lines of tableaux, in case your tableaux are really big
+
+* Take away annoying print functions
+
+* Think about sensible 'noisy' options
+
+* Make `initializeWeights()` run automatically at some sensible point
+
+* Add to `initializeWeights()`:
+--* Ability for user to specify a list of initial weights
+--* Ability to choose random weights, with user-specified parameters
+
+#### Visualization:
+
+* Make graphs within Python
+
+* Make export capability for reporting in R
+
+## Wish list:
+
+* Implement batch gradient descent option
+..* Add lexC generation
+..* Figure out what to do with hidden structure
+
+* Add stress candidate generation
