@@ -112,7 +112,7 @@ methods:
 ## To-Do list:
 
 * fix `printTableau()` so that it does something more visually appealing
-..* Have it print the first n lines of tableaux, in case your tableaux are really big
+  * Have it print the first n lines of tableaux, in case your tableaux are really big
 
 * fix the carriage return problem... Ideally, accept both \r and \n as line splits
 
@@ -125,8 +125,8 @@ methods:
 * Make `initializeWeights()` run automatically at some sensible point
 
 * Add to `initializeWeights()`:
-..* Ability for user to specify a list of initial weights
-..* Ability to choose random weights, with user-specified parameters
+  * Ability for user to specify a list of initial weights
+  * Ability to choose random weights, with user-specified parameters
 
 * Figure out how to implement regularization
 
@@ -135,10 +135,10 @@ methods:
 #### Visualization:
 
 * Make graphs within Python
-..* weights of general constraints over time
-..* figure out how to visualize weights of lexical constraints
-..* histogram of UR's chosen by sampling
-..* SSE/MSE/logLikelihood over time
+  * weights of general constraints over time
+  * figure out how to visualize weights of lexical constraints
+  * histogram of UR's chosen by sampling
+  * SSE/MSE/logLikelihood over time
 
 * Make export capability for reporting in R
 
@@ -147,7 +147,7 @@ methods:
 * Implement option for different learning rates for each general constraint, a la Jesney and Tessier
 
 * Implement batch gradient descent option
-..* Add lexC generation
-..* Figure out what to do with hidden structure
+  * Add lexC generation
+  * Figure out what to do with hidden structure
 
 * Add stress candidate generation
