@@ -125,8 +125,8 @@ methods:
 * Make `initializeWeights()` run automatically at some sensible point
 
 * Add to `initializeWeights()`:
---* Ability for user to specify a list of initial weights
---* Ability to choose random weights, with user-specified parameters
+..* Ability for user to specify a list of initial weights
+..* Ability to choose random weights, with user-specified parameters
 
 * Figure out how to implement regularization
 
@@ -135,10 +135,10 @@ methods:
 #### Visualization:
 
 * Make graphs within Python
---* weights of general constraints over time
---* figure out how to visualize weights of lexical constraints
---* histogram of UR's chosen by sampling
---* SSE/MSE/logLikelihood over time
+..* weights of general constraints over time
+..* figure out how to visualize weights of lexical constraints
+..* histogram of UR's chosen by sampling
+..* SSE/MSE/logLikelihood over time
 
 * Make export capability for reporting in R
 
