@@ -92,11 +92,13 @@ methods:
 
 `epoch(theory, iterations, learnRate, lexCstartW, decayRate=None, decayType=None)` Runs `update()` *iterations* number of times.  Returns the error rate during the epoch, and two lists, one of lexCs and one of weights of those lexCs
 
-`learn(iterations, nEpochs, learnRate, lexCstartW, decayRate=None, decayType='linear', theory='MaxEnt')` Runs *nEpochs* epochs, each with *iterations* number of iterations.  
+`learn(iterations, nEpochs, learnRate, lexCstartW, decayRate=None, decayType='linear', theory='MaxEnt')` Runs *nEpochs* epochs, each with *iterations* number of iterations.
 
 `printTableau()` Prints the current tableaux to the command line
 
 `calcLikelihood()` Calculate log likelihood for the entire data set *NOT YET IMPLEMENTED*
+
+`resetTime()` Resets derivational time to zero, for the whole tableau, and for each UR as well
 
 
 
@@ -109,14 +111,16 @@ methods:
 
 ## To-Do list:
 
-* BUG: Each UR's lastSeen value doesn't get updated when tableaux.t gets reset.  This results in weights of the lexically specific constraints skyrocketing off to really high numbers, because you're subtracting a negative number in decayLexC
-
 * fix `printTableau()` so that it does something more visually appealing
 ..* Have it print the first n lines of tableaux, in case your tableaux are really big
+
+* fix the carriage return problem... Ideally, accept both \r and \n as line splits
 
 * Take away annoying print functions
 
 * Think about sensible 'noisy' options
+
+* Keep track of how long learning takes - may need to think about how to optimize!
 
 * Make `initializeWeights()` run automatically at some sensible point
 
@@ -124,13 +128,23 @@ methods:
 --* Ability for user to specify a list of initial weights
 --* Ability to choose random weights, with user-specified parameters
 
+* Figure out how to implement regularization
+
+
+
 #### Visualization:
 
 * Make graphs within Python
+--* weights of general constraints over time
+--* figure out how to visualize weights of lexical constraints
+--* histogram of UR's chosen by sampling
+--* SSE/MSE/logLikelihood over time
 
 * Make export capability for reporting in R
 
 ## Wish list:
+
+* Implement option for different learning rates for each general constraint, a la Jesney and Tessier
 
 * Implement batch gradient descent option
 ..* Add lexC generation

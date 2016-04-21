@@ -1,6 +1,9 @@
 import sys
 import math
+import re
 from scipy.stats import rv_discrete
+import numpy as np 
+import matplotlib.pyplot as plt
 
 class candidate:
 	def __init__(self,c,violations,observedProb,surfaceForm=None):
@@ -61,11 +64,9 @@ class UR:
 	def decayLexC(self,t,decayRate,decayType='linear'):
 		if len(self.lexC)>0:
 			if decayType=='linear':
-				print "linear"
 				for i in range(0,len(self.lexC)):
 					self.lexC[i][1]-=(t-self.lastSeen)*decayRate
-					print self.lexC[i][1]
-
+					
 			if decayType=='logarithmic':
 				for i in range(0,len(self.lexC)):
 					self.lexC[i][1]-=pow(t-self.lastSeen,decayRate)
@@ -78,20 +79,16 @@ class UR:
 
 	def calculateHarmony(self, w, t=None, decayRate=None, decayType=None): # Takes a vector of weights, equal in length to the violation vectors of the candidates
 		self.probDenom=0 # Reset probDenom
-		#print decayRate
 		if (decayRate is not None) and (t is None):
-			sys.exit("You have to pass a time parameter to the calculateHarmony if you're using a decay rate")
+			sys.exit("You have to pass a time parameter to the calculateHarmony function if you're using a decay rate")
 		if decayRate is not None:
 			self.decayLexC(t,decayRate,decayType)
-			#print "decaying!"
 		for cand in self.candidates:
 			# dot product
 			cand.harmony = sum(viol*weight for viol,weight in zip(cand.violations,w))
-			#print cand.harmony
 			# Assuming the candidate's violations and weights are the correct sign, this'll be a negative number
 			for i in self.lexC: # now add in stuff for the lexical constraint
 				cand.harmony += i[1]*(0 if cand.surfaceForm==i[0] else -1)
-				#print cand.harmony
 			self.probDenom += pow(math.e,cand.harmony)
 
 	def predictProbs(self,w, t=None, decayRate=None, decayType=None):
@@ -121,12 +118,10 @@ class UR:
 		return winner, winCandidate
 
 	def compareObsPred(self,theory,w, t=None, decayRate=None, decayType=None):
-		#print decayRate
 		if theory =='batchGD':
 			pass
 			# Have to do some kind of vector comparison for batch gradient descent
 		if theory =='MaxEnt':
-			#print 'comparing...'
 			self.predictProbs(w, t, decayRate, decayType)
 			obs, obsCandidate=self.getObsWinner(theory) # Sample from observed distribution
 			pred, predCandidate=self.getPredWinner(theory) # Sample from predicted distribution
@@ -153,13 +148,18 @@ class Tableaux:
 		self.w = [0]*len(self.constraints)
 
 	def sample(self):
-		theUR = self.urList[rv_discrete(values=(range(0,len(self.urList)),self.urProbsList)).rvs(size=1)] # rv_discrete(values=(l,[0,0,.8,0.05,0.05,0,0.1])).rvs(size=100)
+		sampleVector = [i/sum(self.urProbsList) for i in self.urProbsList]
+		#print sampleVector
+		th = rv_discrete(values=(range(0,len(sampleVector)),sampleVector)).rvs(size=1)
+		#print th
+		theUR = self.urList[th] # rv_discrete(values=(l,[0,0,.8,0.05,0.05,0,0.1])).rvs(size=100)
 		return theUR
 
 
 	def update(self,theory,learnRate,lexCstartW, decayRate=None, decayType=None):
 		# Sample an input form
 		theUR = self.sample()
+		#print theUR.ur
 
 		e, o, p = theUR.compareObsPred(theory,self.w, self.t, decayRate, decayType)
 		if e: # on error
@@ -170,7 +170,6 @@ class Tableaux:
 			# update lexC's
 			existsLexC = False
 			for c in theUR.lexC:
-				print c
 				# Check if lex C favors the observed form
 				if c[0]==o.surfaceForm:
 					c[1]+=learnRate # increment lexC by learning rate
@@ -180,7 +179,6 @@ class Tableaux:
 			if not existsLexC: # if there's no lexical constraint for the observed output, make one
 				theUR.lexC.append([o.surfaceForm,lexCstartW])
 		self.t+=1
-		#print theUR.ur
 		theUR.lastSeen = self.t
 		theUR.nSeen += 1
 		return theUR, e #return the UR and whether or not there was an error
@@ -191,7 +189,9 @@ class Tableaux:
 			UR, err = self.update(theory,learnRate,lexCstartW,decayRate,decayType)
 			errRate += err
 		errRate = float(errRate)/float(iterations)
-		print errRate
+		#print errRate
+
+		sse = self.SSE()
 
 		# Lexically specific constraints and their weights
 		lexCs  = []
@@ -225,6 +225,17 @@ class Tableaux:
 			for j in i.candidates:
 				print i.prob, "\t", i.ur, "\t", j.c,"\t",j.harmony,"\t",j.observedProb,"\t",j.predictedProb, "\t", j.violations
 
+	def printPrettyTableau(self):
+		plot = [["urProb","UR","Candidate","H","Observed","Predicted"]]
+		plot[0].extend(self.constraints)
+		for i in self.urList:
+			for j in i.candidates:
+				row =[i.prob,i.ur,j.c,j.harmony,j.observedProb,j.predictedProb]
+				row.extend(j.violations)
+				plot.append(row)
+		plt.table(cellText=plot,loc="center")
+		plt.show(block=False)
+
 	def calcLikelihood(self):
 		logLikelihood=0
 		for i in self.urList:
@@ -235,6 +246,15 @@ class Tableaux:
 				# Log j.observedProb * j.predictedProb ?
 		print "This function doesn't work yet.  Please check back later"
 		return logLikelihood
+
+	def SSE(self):
+		sse=0
+		for i in self.urList:
+			i.calculateHarmony(self.w)
+			i.predictProbs(self.w)
+			for j in i.candidates:
+				sse+=pow(j.observedProb-j.predictedProb,2)
+		return sse
 
 
 
@@ -254,21 +274,28 @@ def readOTSoft(file):
 	print 'reading tableaux...'
 	tableaux = Tableaux()
 	with open(file,"r") as f:
-		lines=f.read().split('\r')
+		lines=f.read().split('\n')
+		# Check if the linebreak character is correct.  If it's not, the symptoms will be (a) only one line and (b) '\r' somewhere inside the line
+		if bool(re.match('.*\r.*',lines[0])):
+			if len(lines)==1:
+				lines=lines[0].split('\r')
+			else:
+				print "EEK something is wrong with your linebreaks"
+		print lines
 		lineno=0
 		for line in lines:
 			line=line.split('\t')
-			print line
+			#print line
 			if lineno==0:
 				firstLine = line
-				print firstLine
+				#print firstLine
 				if firstLine[1]=="":
 					# OTSoft file? They have empty cells at the top
 					pass
 				if firstLine[0]=="input":
 					# hgr file? They have the first three columns labeled
 					inputType='hgr'
-					print inputType
+					#print inputType
 					# Constraints are in the first line too, so grab those
 					# Headers of these files:
 					# input output (hidden) probability (tab.prob) Constraint1 Constraint2 ...
@@ -277,9 +304,9 @@ def readOTSoft(file):
 					tokenFrequency = (True if firstLine[offset+1]=='tab.prob' else False)
 					offset = offset + (2 if firstLine[offset+1]=='tab.prob' else 1)
 					constraints=firstLine[offset:]
-					print offset
-					print tokenFrequency
-					print constraints
+					#print offset
+					#print tokenFrequency
+					#print constraints
 					tableaux.constraints = constraints
 				else:
 					print "I can't tell what type of file this is :("
@@ -293,12 +320,11 @@ def readOTSoft(file):
 				violations = line[offset:]
 				print ur
 				if ur not in tableaux.urIDlist:
-					print 'add'
+					#print 'add'
 					tableaux.addUR(UR(ur,tokenProb))
 				for i in tableaux.urList:
 					if i.ur==ur:
 						i.addCandidate(candidate(c,violations,observedProb,surfaceForm))
 						break
 			lineno+=1
-			print lineno
 	return tableaux
