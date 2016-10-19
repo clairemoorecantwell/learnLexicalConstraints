@@ -110,7 +110,7 @@ attributes:
 
 
 
-methods:
+_methods:_
 
 `addUR(ur)` adds an object of class `UR` to the `Tableaux`
 
@@ -132,13 +132,26 @@ methods:
   - Add the UR being used to the `lexicon`, or up its count if it's already in the `lexicon`.
   - use `compareObsPred()` to decide whether there is an error. `comparisonStrategy` is a parameter that decided whether to compare via plain sampling (`sample`), or compare the predicted output to a set of 'credible outputs' in the observed distribution (`HDI`).  See the documentation of `compareObsPred()` for details.
   - If there's an error:
-    -- use `perceptronUpdate()` to update all the general constraints
-    -- if any lexical constraints exist for this UR, update them according to perceptron update rule.  NOTE: a hard upper limit of 700 is imposed on lexical constraint weights.  This is because around 740 or so, exponentiating the negative to calculate the probability yields a zero, which later yields a division by zero error
-    -- if there's no lexical constraint for this UR that prefers the correct output, induce one
-    -- (if lexical constraints are being induced probabilistically, first do some calculations to decide what the right probability is)
+    ..- use `perceptronUpdate()` to update all the general constraints
+    ..- if any lexical constraints exist for this UR, update them according to perceptron update rule.  NOTE: a hard upper limit of 700 is imposed on lexical constraint weights.  This is because around 740 or so, exponentiating the negative to calculate the probability yields a zero, which later yields a division by zero error
+    ..- if there's no lexical constraint for this UR that prefers the correct output, induce one
+    ..- (if lexical constraints are being induced probabilistically, first do some calculations to decide what the right probability is)
+    ..-((This sampling process is still under construction))
   - increment time `t`
   - update the trained UR's `lastSeen` and `nSeen` parameters
 
+  Ok, now let's talk about all the parameters:
+  .. theory
+  .. learnRate
+  .. lexCstartW
+  .. lexLearnRate
+  .. lexCSample
+  .. lexCSampleSize
+  .. decayRate
+  .. decayType
+  .. haveLexC
+  .. comparisonStrategy
+  .. urToUse
 
 `epoch(theory, iterations, learnRate, lexCstartW, decayRate=None, decayType=None)` Runs `update()` *iterations* number of times.  Returns the error rate during the epoch, and two lists, one of lexCs and one of weights of those lexCs
 
