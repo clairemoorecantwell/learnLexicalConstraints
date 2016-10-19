@@ -1,5 +1,19 @@
 # Online learner with lexically specific constraints
 
+## Quick Start
+
+To quickly get started learning, you need a couple of things
+
+* Some data, formatted properly
+  * first line, tab-separated: `input` `output`...
+  * `tab.prob` and (hidden structure) are optional, just leave those columns out if your don't want to use them
+  * input column should have something on every line: each line is a candidate, and each the input column should contain the UR for that candidate.  Each UR needs to be unique.
+  * The violation columns can contain any integers, or spaces.  Spaces will be converted to 0's and integers will be converted to negative integers.
+* Some way to run Python (2.7), ideally that can plot, so that the plotting functions will work.  I use ipython <https://ipython.org>
+* A plan!
+
+
+
 ## Classes:
 
 ### candidate
@@ -32,21 +46,27 @@ use: `new_UR = UR(ur,prob=1,lexC=None)`
 
 `UR` also has the following attributes:
 
-**candidates:** A list containing objects of the class `candidate`
+**candidates:** A list containing objects of the class `candidate`. This has to be populated after the UR object is created.
 
 **probDenom:** This is for calculating MaxEnt probability for candidates of this input.  It's just the denominator for that calculation: sum(e^(-H))
 
 **predProbsList:** List of each candidate's predicted probability, `predictedProb`, for use in sampling
 
-**obsProbList:** List of each candidates observed probability, `observedProb`, for use in sampling
+**obsProbList:** List of each candidate's observed probability, `observedProb`, for use in sampling
 
-**lastSeen:** For use in online learning, this is a tag that notes when the UR was last sampled.  It's used for decaying the lexically-specific constraints
+**lastSeen:** For use in online learning, this is a tag that notes when the UR was last sampled.  It's used for decaying the lexically-specific constraints.
+
+**nSeen:** For use in online learning, this is a tag that notes how many times the UR has been sampled.  For now, it's just for use in analyzing the learning process after the fact - it's not used during learning
+
+**probableCandidates:** a list of all the candidates with observed probabilities greater than 5%, or 0.05
 
 `UR` also has the following methods:
 
-`addCandidate(cand)` adds a candidate to the list of candidates
+`addCandidate(cand)` adds a candidate object to the list of candidates
 
-`decayLexC(t,decayRate,decayType='linear')` Decays the lexical constraints according to how much time has passed since the UR was observed.  The `decayRate` is a parameter defining how much they decay by.  If it's 0, they won't decay at all.  `decayType` can be `linear` or `logarithmic`.  If `linear`, the lexical constraint weights will decay according to the equation: *new_weight = old_weight - (t-`lastSeen`) X decayRate*, and if the weight decays to or below zero, the lexical constraint will get removed. If decay is set to `logarithmic`, the weights will decay according to *new_weight = old_weight - (t-lastSeen)^decayRate*.  Once again, if it gets to or below zero the constraint will get removed.
+`getProbableCandidates()` fills *probableCandidates* with the surface forms of all candidates whith observed probabilities greater than 5%.  This can be seen to approximate a Bayesian "Highest Density Interval" or "Credible Interval" of output candidates.
+
+`decayLexC(t,decayRate,decayType='linear')` Decays the lexical constraints according to how much time has passed since the UR was last observed.  The `decayRate` is a parameter defining how much they decay by.  If it's 0, they won't decay at all.  The lexical constraint weights will decay according to the equation: *new_weight = old_weight - (t-`lastSeen`) X decayRate*, and if the weight decays to or below zero, the lexical constraint will get removed. Note that there's a parameter `decayType` for which the only supported value is currently `linear`.  That's because there's probably a better way to decay, but a previously implemented `logarithmic` decay actually made no sense, and is now commented out.  So this is work in progress here, but I've left a slot for the future work to go in.
 
 `checkViolationLength()` checks if all the violation vectors of the candidates are the same length ** Not written yet**
 
@@ -54,11 +74,15 @@ use: `new_UR = UR(ur,prob=1,lexC=None)`
 
 `predictProbs(w,t=None,decayRate=None,decayType=None)` calculates the predicted probabilities of each candidate according to a vector of weights `w`.  Begins by calling `calculateHarmony`, which can call `decayLexC`, hence you can give it the appropriate parameters
 
-`getPredWinner(theory)` Get a winner based on your theory - if MaxEnt (currently the only one implemented), sample to get that winner.  Returns a string that's the actual surface form winner, as well as the entire candidate object that's the winner.
+`getPredWinner(theory)` Get a winner based on your theory - if `MaxEnt` (currently the only one implemented), sample to get that winner.  Returns a string that's the actual surface form winner, as well as the entire candidate object that's the winner.
 
 `getObsWinner(theory)` Get an observed winner by sampling from the observed distribution over candidates.  If there's a sole observed winner, that one will always be returned by this function.  Returns a string that's the surface form of the observed winner, and also returns the entire candidate object.
 
-`compareObsPred(theory,w,t=None,decayRate=None,decayType=None)` Calls `getPredWinner` and `getObsWinner`, and compares the observed to the predicted winner to see if there's an error.  The function also calls `predictProbs`, which calls `calculateHarmony` and `decayLexC`, so altogether, it calculates the current values for the lexical constraints, and it calculates harmonies and probabilities given the current set of both general and lexical constraint weights, and then it samples and sees if the observed thing matches the predicted thing.  Returns whether or not there was an error (0 if no error, 1 if error), and the candidate objects for the observed candidate and the predicted candidate.  NOTE ON HIDDEN STRUCTURE:  **hidden structure still in progress.  check back later ** 
+`compareObsPred(theory,w,strategy = 'sample', t=None,decayRate=None,decayType=None)` Compares observed to predicted winner, using one of two strategies.  Either samples from both the predicted and the observed distributions, and compares those samples to see if there's an error, or if `strategy` = `HDI`, it samples from the predicted distribution, and then checks whether that sampled form is one of the most probable candidates for in the observed distribution.
+
+If `sample`, the default, it calls `getPredWinner` and `getObsWinner`, and compares the observed to the predicted winner to see if there's an error.  The function also calls `predictProbs`, which calls `calculateHarmony` and `decayLexC`, so altogether, it calculates the current values for the lexical constraints, and it calculates harmonies and probabilities given the current set of both general and lexical constraint weights, and then it samples and sees if the observed thing matches the predicted thing.  Returns whether or not there was an error (0 if no error, 1 if error), and the candidate objects for the observed candidate and the predicted candidate.  NOTE ON HIDDEN STRUCTURE:  **hidden structure still in progress.  check back later ** 
+
+
 
 ## Tableaux
 
@@ -70,25 +94,51 @@ attributes:
 
 **urIDlist:** list of strings, that are the strings of the URs
 
-**urProbsList:** List of floats, aligned to the list of URs - each number is the 'lexical frequency' of that UR, or the weight at which you want it to be sampled for learning
+**urProbsList:** List of floats, aligned to the list of URs - each number is the 'lexical frequency' of that UR, or the weight at which you want it to be sampled for learning.  These can by any real positive number (or 0) - for sampling the list will be converted to a proper probability distribution.
 
-**theory:** Right now, only 'MaxEnt' is implemented
+**theory:** Right now, only 'MaxEnt' is implemented.  Hopefully in the future, we can do at least Noisy HG and regular HG.
 
 **constraints:** List of names of the markedness/faithfulness constraints
 
 **w:** List of weights of the markedness/faithfulness constraints
 
-**t:** Current or last learning iteration
+**t:** Current or most recent learning iteration
+
+**lexicon:** This keeps track of what words have actually been presented to the learner, and how often.  Its structure is [[],[]], or a list containing two sublists.  The first is a list of UR objects, and the second is a list of their corresponding integer 'frequencies', which indicate the number of times that UR has been used for learning.  For example, [[ur1,ur2,ur3],[12,45,0]] indicates that ur1 has been used 12 times, ur2 has been used 45 times, and ur3 has not been used at all.
+
+**pLexC:** The probability that, upon error, a lexical constraint will be induced.  This starts out as 1, and can get lowered over the course of learning if you're using probabilistic induction of these constraints.
+
+
 
 methods:
 
 `addUR(ur)` adds an object of class `UR` to the `Tableaux`
 
-`initializeWeights()` Initializes the weights to zero  *NOTE: need to fix this so that it can take arbitrary or random starting weights*
+`initializeWeights(w)` Takes an optional argument, `w`, which is the weight vector you want to use for starting weights.  If no `w` is provided, the weights are all initialized to zero.
 
-`sample()` Uses `urProbsList` to sample a UR (for use in updating)
+`getReady()` Creates a new attribute for the Tableaux object: URsampleVector, which is a list of probabilities that's normalized from urProbsList, and turned into a numpy array if numpy is turned on.
 
-`update(theory, learnRate, lexCstartW, decayRate=None, decayType=None)` Executes a single update iteration.  The steps of this are (1) sample a UR using `sample()`, (2) compare the predicted output given the current grammar to the observed outpus using `compareObsPred()`.  (3) If there's an error, first (3a) update the general constraints with `perceptronUpdate`, then (3b) update the lexC's.  If there's already a lexC favoring the observed form, increment it by the learning rate.  If there's any lexC's favoring a different surface form, decrement them by the learning rate.  If there's no lexC favoring the observed surface form, create one with weight *lexCstartW*  (4) Lastly, increment *t*.  The function returns the UR that was used, and whether or not there was an error (1 for error, 0 for no error)
+`sample()` Uses `URsampleVector` to sample a UR, and returns that UR object.  This is no longer actually used inside the learning functions, but you might find it useful for playing around with single iterations or troubleshooting.
+
+`resetTime()` Resets the time stamps of all the parts of the tableaux object - the `t` value, as well as the `lastSeen` value of each UR.
+
+`resetLexC()` Goes through the URs and erases all their lexical constraints.
+
+`downSample(size,disregardFrequency=False)` returns a new Tableaux object with only `size` UR's, sampled without replacement from the original Tableaux object.  By default, it samples them according to their given frequencies, but you can turn this off by setting `disregardFrequency` to `True`
+
+`update(theory, learnRate, lexCstartW, lexLearnRate, lexCSample=False, lexCSampleSize=10, decayRate=None, decayType=None, haveLexC=False, comparisonStrategy='sample', urToUse=None)` Executes a single update iteration.  See the paper/presentation for a schematic of how this iteration proceeds.  This function returns the UR object updated on, and a 1 or 0, indicating whether there was an error or not (1 means error, 0 means no error).  Inside the function the following things happen:
+
+  - Check if a UR has been provided in `urToUse`.  If not, get one using `sample()`.
+  - Add the UR being used to the `lexicon`, or up its count if it's already in the `lexicon`.
+  - use `compareObsPred()` to decide whether there is an error. `comparisonStrategy` is a parameter that decided whether to compare via plain sampling (`sample`), or compare the predicted output to a set of 'credible outputs' in the observed distribution (`HDI`).  See the documentation of `compareObsPred()` for details.
+  - If there's an error:
+    -- use `perceptronUpdate()` to update all the general constraints
+    -- if any lexical constraints exist for this UR, update them according to perceptron update rule.  NOTE: a hard upper limit of 700 is imposed on lexical constraint weights.  This is because around 740 or so, exponentiating the negative to calculate the probability yields a zero, which later yields a division by zero error
+    -- if there's no lexical constraint for this UR that prefers the correct output, induce one
+    -- (if lexical constraints are being induced probabilistically, first do some calculations to decide what the right probability is)
+  - increment time `t`
+  - update the trained UR's `lastSeen` and `nSeen` parameters
+
 
 `epoch(theory, iterations, learnRate, lexCstartW, decayRate=None, decayType=None)` Runs `update()` *iterations* number of times.  Returns the error rate during the epoch, and two lists, one of lexCs and one of weights of those lexCs
 
@@ -114,9 +164,6 @@ methods:
 * fix `printTableau()` so that it does something more visually appealing
   * Have it print the first n lines of tableaux, in case your tableaux are really big
 
-* fix the carriage return problem... Ideally, accept both \r and \n as line splits
-
-* Take away annoying print functions
 
 * Think about sensible 'noisy' options
 
@@ -135,8 +182,9 @@ methods:
 #### Visualization:
 
 * Make graphs within Python
-  * weights of general constraints over time
   * figure out how to visualize weights of lexical constraints
+  	* add functionality to the tableau object, for it to take groupings as input
+  	* hover/click capability
   * histogram of UR's chosen by sampling
   * SSE/MSE/logLikelihood over time
 
