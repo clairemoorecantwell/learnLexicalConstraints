@@ -132,37 +132,50 @@ _methods:_
   - Add the UR being used to the `lexicon`, or up its count if it's already in the `lexicon`.
   - use `compareObsPred()` to decide whether there is an error. `comparisonStrategy` is a parameter that decided whether to compare via plain sampling (`sample`), or compare the predicted output to a set of 'credible outputs' in the observed distribution (`HDI`).  See the documentation of `compareObsPred()` for details.
   - If there's an error:
-    ..- use `perceptronUpdate()` to update all the general constraints
-    ..- if any lexical constraints exist for this UR, update them according to perceptron update rule.  NOTE: a hard upper limit of 700 is imposed on lexical constraint weights.  This is because around 740 or so, exponentiating the negative to calculate the probability yields a zero, which later yields a division by zero error
-    ..- if there's no lexical constraint for this UR that prefers the correct output, induce one
-    ..- (if lexical constraints are being induced probabilistically, first do some calculations to decide what the right probability is)
-    ..-((This sampling process is still under construction))
+    ..* use `perceptronUpdate()` to update all the general constraints
+    ..* if any lexical constraints exist for this UR, update them according to perceptron update rule.  NOTE: a hard upper limit of 700 is imposed on lexical constraint weights.  This is because around 740 or so, exponentiating the negative to calculate the probability yields a zero, which later yields a division by zero error
+    ..* if there's no lexical constraint for this UR that prefers the correct output, induce one
+    ..* (if lexical constraints are being induced probabilistically, first do some calculations to decide what the right probability is)
+    ..*((This sampling process is still under construction))
   - increment time `t`
   - update the trained UR's `lastSeen` and `nSeen` parameters
 
-  Ok, now let's talk about all the parameters:
-  .. theory
-  .. learnRate
-  .. lexCstartW
-  .. lexLearnRate
-  .. lexCSample
-  .. lexCSampleSize
-  .. decayRate
-  .. decayType
-  .. haveLexC
-  .. comparisonStrategy
-  .. urToUse
+  Ok, now let's talk about all the parameters (Many of these are brief explanations only - see the discussion of the learn() function for more details of most of them):
+  - *theory*: Only 'MaxEnt' is implemented.  Hopefully in the future other types of Noisy HG will be implemented as well.
 
-`epoch(theory, iterations, learnRate, lexCstartW, decayRate=None, decayType=None)` Runs `update()` *iterations* number of times.  Returns the error rate during the epoch, and two lists, one of lexCs and one of weights of those lexCs
+  - *learnRate*: The learning rate, or the amount by which the general constraints get updated by the perceptron update rule.  Larger values will result in faster and more granular learning.
+
+  - *lexCstartW*: The starting weight for induction of lexically specific constraints.
+
+  - *lexLearnRate*: The learning rate for lexical constraints
+
+  - *lexCSample*: `False` to induce a lexical constraint on every error, `True` to induce a lexical constraint probabilistically based on how many lexical constraints are already in the system
+
+  - *lexCSampleSize*: parameter to help with figuring out whether to induce a lexical constraint in this case
+
+  - *decayRate*: decay rate of lexical constraints
+
+  - *decayType*: `static`, `linear`, or `nonlinear` - see notes on `decayLexC()` to see what they all do.
+
+  - *haveLexC*: If `True`, lexical constraints are used, if `False`, no lexical constraints.
+
+  - *comparisonStrategy*: `sample` or `HDI` - how do you want to compare the predicted and observed outputs?  if `sample`, compare by sampling from both distributions.  If `HDI`, check whether the predicted output (sampled) has an appreciable probability (over some threshold - by default it's 0.05) in the observed distribution.
+
+  - *urToUse*: What UR are we learning on right now?  Takes a UR object that's within the Tableaux object.
+
+`epoch(theory, iterations, learnRate, lexCstartW, decayRate=None, decayType=None)` Runs `update()` *iterations* number of times, and returns: 
+
+- the actual error rate during the epoch - a percentage of updates which were errors
+- the current sum squared error (SSE) between the observed probabilities and current predicted probabilities for each candidate.  This is calculated by the `SSE()` function.
+- list of lexical constraints, in tuples of the form (ur, preferred output)
+- list of weights corresponding to the lexical constraints
+- current probability of inducing a lexical constraint, calculated analytically as 1-((1-NlexC/Nurs)^lexCSampleSize), which is the probability that a sample will contain at least one lexical constraint, given the sample size and percentage of URs which currently have lexical constraints affiliated with them
 
 `learn(iterations, nEpochs, learnRate, lexCstartW, decayRate=None, decayType='linear', theory='MaxEnt')` Runs *nEpochs* epochs, each with *iterations* number of iterations.
 
 `printTableau()` Prints the current tableaux to the command line
 
 `calcLikelihood()` Calculate log likelihood for the entire data set *NOT YET IMPLEMENTED*
-
-`resetTime()` Resets derivational time to zero, for the whole tableau, and for each UR as well
-
 
 
 ## Functions:
