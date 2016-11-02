@@ -9,9 +9,9 @@ To quickly get started learning, you need a couple of things
   * `tab.prob` and (hidden structure) are optional, just leave those columns out if your don't want to use them
   * input column should have something on every line: each line is a candidate, and each the input column should contain the UR for that candidate.  Each UR needs to be unique.
   * The violation columns can contain any integers, or spaces.  Spaces will be converted to 0's and integers will be converted to negative integers.
-* Some way to run Python (2.7), ideally that can plot, so that the plotting functions will work.  I use ipython <https://ipython.org>
-* A plan!
+* Some way to run Python (2.7), ideally that can plot, so that the plotting functions will work.  I use ipython <https://ipython.org>.  If you can install numpy (<http://www.numpy.org/>), and do it in a way that you get access to the numpy.random.choice() function, the whole thing will run much quicker.  You might need to install some kind of package like Anaconda (<https://www.continuum.io/downloads>) to get the numpy installation to run smoothly.
 
+* You can start off with the two example files 'comparativesToy.txt' and 'comparativesCOCA.txt'.  The former contains 100 inputs, with frequencies normally distributed, of 1-100, and all with 50% probability of taking each comparative.  Only two 'phonological' constraints are in there, and they simply prefer one or the other of the comparative forms.  'comparativesCOCA.txt' contains 214 adjectives of English, with frequencies and probabilities obtained from COCA, and 9 grammatical constraints with violations.  For more details about how these tableaux were constructed, please visit <http://http://www.phrenology.biz/emergentIdiosyncrasy/>.
 
 
 ## Classes:
@@ -29,7 +29,7 @@ use: `new_candidate = candidate(c,violations,observedProb,surfaceForm=None)`
 
 **predictedProb:** The predicted probability of that candidate given the current constraint weights and the theory you're using (e.g. MaxEnt) As of 25 Mar, 2016, only MaxEnt is implemented.  NOTE: This is calculated on the fly during learning.  If you're learning via sampling, this value will be whatever it was calculated to be last time predictProbs() was called on the parent UR.
 
-**harmony:** The harmony of the candidate, calculates by calling calculateHarmony() from the parent UR
+**harmony:** The harmony of the candidate, calculated by calling calculateHarmony() from the parent UR
 
 `candidate` also has the following methods:
 
@@ -66,13 +66,13 @@ use: `new_UR = UR(ur,prob=1,lexC=None)`
 
 `getProbableCandidates()` fills *probableCandidates* with the surface forms of all candidates whith observed probabilities greater than 5%.  This can be seen to approximate a Bayesian "Highest Density Interval" or "Credible Interval" of output candidates.
 
-`decayLexC(t,decayRate,decayType='linear')` Decays the lexical constraints according to how much time has passed since the UR was last observed.  The `decayRate` is a parameter defining how much they decay by.  If it's 0, they won't decay at all.  The lexical constraint weights will decay according to the equation: *new_weight = old_weight - (t-`lastSeen`) X decayRate*, and if the weight decays to or below zero, the lexical constraint will get removed. Note that there's a parameter `decayType` for which the only supported value is currently `linear`.  That's because there's probably a better way to decay, but a previously implemented `logarithmic` decay actually made no sense, and is now commented out.  So this is work in progress here, but I've left a slot for the future work to go in.
+`decayLexC(t,decayRate,decayType='static')` Decays the lexical constraints according to how much time has passed since the UR was last observed.  The `decayRate` is a parameter defining how much they decay by.  If it's 0, they won't decay at all.  The lexical constraint weights will decay according to the equation: *new_weight = old_weight - (t-`lastSeen`) X decayRate*, and if the weight decays to or below zero, the lexical constraint will get removed. The `decayType` parameter defaults to `static`, yielding the above behavior.  Other options are `linear`, meaning the amount of decay depends linearly on the weight of the lexical constraint.  (less decay for lower weights), and `nonlinear`, meaning the amount of decay depends linearly on the square of the weight of the lexical constraint.
 
 `checkViolationLength()` checks if all the violation vectors of the candidates are the same length ** Not written yet**
 
-`calculateHarmony(w,t=None,decayRate=None,decayType=None)` calculates the harmony of each candidate, using w, the vector of weights of the markedness constraints.  If `decayRate` is set to something besides None, it begins by calling `decayLexC`, which is why it takes `t`, `decayRate`, and `decayType` as parameters.
+`calculateHarmony(w,t=None,decayRate=None,decayType=None,suppressLexC=False)` calculates the harmony of each candidate, using w, the vector of weights of the markedness constraints.  If `decayRate` is set to something besides None, it begins by calling `decayLexC`, which is why it takes `t`, `decayRate`, and `decayType` as parameters.  If `suppressLexC` is set to True, this will calculate harmony without the lexical constraints.  This can be useful for comparing predictions.
 
-`predictProbs(w,t=None,decayRate=None,decayType=None)` calculates the predicted probabilities of each candidate according to a vector of weights `w`.  Begins by calling `calculateHarmony`, which can call `decayLexC`, hence you can give it the appropriate parameters
+`predictProbs(w,t=None,decayRate=None,decayType=None, suppressLexC=False)` calculates the predicted probabilities of each candidate according to a vector of weights `w`.  Begins by calling `calculateHarmony`, which can call `decayLexC`, hence you can give it the appropriate parameters.  If `suppressLexC` is True, probabilities will be predicted without the lexical constraints.  Note that if you do this, your UR's will have the wrong predicted probabilities until you run this again without supression.  So be careful.
 
 `getPredWinner(theory)` Get a winner based on your theory - if `MaxEnt` (currently the only one implemented), sample to get that winner.  Returns a string that's the actual surface form winner, as well as the entire candidate object that's the winner.
 
@@ -88,7 +88,7 @@ If `sample`, the default, it calls `getPredWinner` and `getObsWinner`, and compa
 
 use: `new_tableaux = Tableaux(theory='MaxEnt')`
 
-attributes:
+_attributes_:
 
 **urList:** list of objects of class `UR`
 
@@ -163,7 +163,7 @@ _methods:_
 
   - *urToUse*: What UR are we learning on right now?  Takes a UR object that's within the Tableaux object.
 
-`epoch(theory, iterations, learnRate, lexCstartW, decayRate=None, decayType=None)` Runs `update()` *iterations* number of times, and returns: 
+`epoch(theory, iterations, learnRate, lexCstartW, lexLearnRate, lexCSample=True, lexCSampleSize=10, decayRate=None, decayType=None, haveLexC=False, comparisonStrategy='sample')` Runs `update()` *iterations* number of times, and returns: 
 
 - the actual error rate during the epoch - a percentage of updates which were errors
 - the current sum squared error (SSE) between the observed probabilities and current predicted probabilities for each candidate.  This is calculated by the `SSE()` function.
@@ -171,11 +171,50 @@ _methods:_
 - list of weights corresponding to the lexical constraints
 - current probability of inducing a lexical constraint, calculated analytically as 1-((1-NlexC/Nurs)^lexCSampleSize), which is the probability that a sample will contain at least one lexical constraint, given the sample size and percentage of URs which currently have lexical constraints affiliated with them
 
-`learn(iterations, nEpochs, learnRate, lexCstartW, decayRate=None, decayType='linear', theory='MaxEnt')` Runs *nEpochs* epochs, each with *iterations* number of iterations.
+The reason the learning iterations are encased in these epochs is basically to limit the amount of saving of information.  So basically, the learning process is 'sampled' at the end of every epoch.  This is the primary job of the epoch function.  Here's what happens:  (1) URs are sampled, and a playlist of them is made.  (2) *iterations* updates are executed, and meanwhile information about how many of them were errors is recorded (3) catch-up decay is executed, so that all the lexical constraints are decayed the proper amount for time `t` (4) information about the epoch is structured properly to be saved and returned, so that it can be passed back up to the `learn()` function.
 
-`printTableau()` Prints the current tableaux to the command line
+The parameters of `epoch()` are the same, and mean the same things as the parameters of `update()`, except for urToUse, which is specific to `update()`, and `iterations` which is specific to `epoch()` and is the number of learning updates in an epoch.
+
+`learn(iterations, nEpochs, learnRate, lexCstartW=0, lexLearnRate=0, lexCSample=False, lexCSampleSize=10, decayRate=None, decayType='static', theory='MaxEnt', haveLexC=False, reset=True, comparisonStrategy='sample')` 
+
+This is the main wrapper for learning, and is the function you will most likely be actually executing by hand.  It returns a `Results` object that contains samples of the learning process, and information about its end state.
+
+- `iterations` number of learning updates in an epoch
+- `nEpochs` number of epochs
+
+The total number of learning iterations will be `iterations` x `nEpochs`. The results object will contain information about each epoch, but information about each individual iteration will not be saved.  So, you should break down your desired number of learning updates into epochs based on how finely you want to sample the learning process.  Sampling more coarsely will take less time to run (by a larger factor for larger datasets).
+
+- `learnRate` learning rate for perceptron update of general constraints.  Use larger values for quicker, more coarse-grained learning, and smaller values for slower, more fine-grained learning.  If you have no idea what kind of number to try, start with 0.01.
+
+`learnRate` can also be a list of two numbers, which will act as a learning rate 'schedule', so that over the course of learning the learning rate will change from the first to the second number.  The learning rate will be updated on each epoch.  For example, if `learnRate` was given as [0.1,0.01], and there were 10 epochs, the learning rate for the first epoch would be 0.1, for the second epoch would be 0.09, for the third would be 0.08 ... and for the last would be 0.01.
+
+- `lexCstartW` Starting weight for lexical constraints when they are first induced.  Appropriate values for this depend on the decay rate and learning rate of those constraints.  You want it to be high enough that the constraints have a chance to be used before they decay away.
+
+- `lexLearnRate` Learning rate for lexical constraints.  This is distinct from the overall learning rate to reflect the intuition that updating specific knowledge about a lexical item should be a different process than updating general grammatical knowledge.  You can also set it to be the same as `learnRate`.
+
+- `lexCSample` If `False`, lexical constraints will be induced on every learning update which produces an error.  If `True`, determine whether a lexical constraint will be induced on error by sampling from the lexicon (URs that have previously been trained on at least once) and checking whether any of the lexical items have a lexical constraint affiliated with them.  If any lexical item in the sample does have a lexical constraint, go ahead and induce one this time.  Otherwise, don't.
+
+Some notes on this process: At the beginning of learning, a lexical constraint is induced on every error.  Once the lexicon gets as big as the sample size, `lexCSampleSize`, start grabbing a pool of lexical items at each update.  The pool is `lexCSampleSize` number of items.  If any lexical item has a lexical constraint, it's enough.  Decide to induce a lexically specific constraint.
+
+- `lexCSampleSize` see above.
+
+- `decayRate` Rate of decay of the lexical constraints.  This should be pretty low to get sensible behavior (by which I mean general constraint weights and SSE stabilize over time, instead of oscillating)
+
+- `decayType` How decay is calculated: `static` means the new weight is calculated according to the equation *new_weight = old_weight - (t-`lastSeen`) X decayRate*.  Other options are `linear`, meaning the amount of decay depends linearly on the weight of the lexical constraint.  (less decay for lower weights), and `nonlinear`, meaning the amount of decay depends linearly on the square of the weight of the lexical constraint.
+
+- `theory` Just set it to 'MaxEnt', which is the default anyway.
+
+- `haveLexC` If `True`, use lexical constraints.  If `False`, learn without them.
+
+- `reset` If `True`, reset the time, weights, and lexical constraints before learning (so, learn from a fresh tableaux).  If `False`, learning just continues from where it left off.
+
+- `comparisonStrategy` How will observed outputs be compared to predicted ones?  If `sample`, sample from both distributions and compare the samples.  If `HDI`, instead sample from the predicted distribution, and check whether the sample is in the set of 'credible outputs' in the observed distribution.  By default, this set of credible outputs is all outputs with an observed probability over 0.05.
 
 `calcLikelihood()` Calculate log likelihood for the entire data set *NOT YET IMPLEMENTED*
+
+`SSE()` Calculates and returns the current SSE, comparing predicted probabilities to observed probabilities for each UR and candidate.
+
+
 
 
 ## Functions:
@@ -185,36 +224,99 @@ _methods:_
 `perceptronUpdate(error, target, weights, rate)` error and target should be violation vectors, weights should be a vector of weights, and rate is the learning rate.  Returns an updated weight vector.
 
 
+## Society
+use: `new_society = Society(generations,startTableaux,outputName)`
+
+_attributes_:
+
+**generations:** starts at 0.  Currently not used for anything, apparently?
+
+**startTableaux:** A `Tableaux` object to use as the starting point for some generational learning.
+
+**currentTableaux:** The current generation's `Tableaux` object, created from the results of learning on the last `Tableaux` object.
+
+**resultses:** List of `Results` objects, one from each generation.
+
+**outputName:** Prefix name to give the files that will be saved using `Results.save()` at each generation.
+
+_methods_:
+
+`iterate(nGenerations,iterations,nEpochs,learnRate,lexCstartW=0,lexLearnRate=0,lexCSample=False,lexCSampleSize=10,decayRate=None,decayType='static',theory='MaxEnt',haveLexC=False,reset=True,comparisonStrategy='sample',updateURprobs=True)` This function will execute `Tableaux.learn()` iteratively, using the results of each learning as the input data for the next learning run.  Most of these parameters pertain to how the learning should proceed, and you should look at `Tableaux.learn()` for help with them.  `nGenerations` states how many generations to run, and `updateURprobs` dictates whether or not the frequecies of each UR should be updated from generation to generation.  If this is False, UR probabilities will never change.  If it's True, then some low-frequency words will drop out over the course of learning, and the distribution will get more and more extremely zipfian.
+
+`updateTableaux(candidateProbs=True,URprobs=True)` This function updates the `Society.currentTableaux` based on the results of learning.
+
+## Results
+use: This is an object that holds the results of a learning run.  You probably shouldn't just make one of these on your own.
+
+_attributes_:
+
+**t:** learning time.  This is going to work out to be just a list from 0 to the total number of epochs that the learner executed.  It's used basically as an index for other information, and in plots.
+
+**w:** weight vector for the general constraints at the end of learning
+
+**sse:** list of SSE values for the system over time, one sample for each learning epoch
+
+**err:** list of actual error rates for each epoch (percent of iterations on that epoch that resulted in an error)
+
+**runtime:** actual runtime of your simulation (in seconds)
+
+**predruntime:** predicted run time - the thing that got printed at you after epoch 0.  You can use this to check the accuracy of the predictions for future references (they're probably not suuuper accurate, but hopefully within an order of magnitude)
+
+**functionCall:** A dictionary that holds all the parameter settings that you gave the learn() function when you ran it.
+
+**Cnames:** List of constraint names
+
+**lexCinfo:** Ok.  This is a thing that holds the lexical constraints and their weights over time.  Its structure is as follows: It's a list of two lists [[0][1]].  List 0 is a list of tuples, each of which defines a lexical constraint (input, preferred output).  List 1 is a list of lists, each of which pertains to the corresponding lexical constraint in list 0.  Each of _these_ has two lists in it.  The first one is a list of epoch numbers, and the second is a list of weights - the weights that that lexical constraint had at each of the listed epochs.  Here's an example for you, with two constraints:
+
+`[[(big+comp, bigger), (true+comp, more true)],[[[3,4,5][9.32,6.3,2.1]],[[8,9,10],[9.3,7.2,8.5]]]]`
+
+The constraint (big+comp, bigger) had a weight of 9.32 at epoch 3, a weight of 6.3 at epoch 4, and a weight of 2.1 at epoch 5.  The constraint (true+comp, more true) had a weight of 9.3 at epoch 8, 7.2 at epoch 9, and 8.5 at epoch 10.
+
+
+**pLexCs:** analytically calculated probability of inducing a lexically specific constraint at every epoch.  This will be meaningless unless you're using probabilistic induction
+
+**lexicon:** The lexicon from the Tableaux object, containing a list of UR objects, and a second list of number of times each UR was used during learning.
+
+
+_methods_:
+
+`save(filename,folder)` Save your results to some text files.  This function will write, to the folder you specify, or the folder that the program is located in if you don't specify a folder, the following output files:
+
+- metadata: this will contain a bunch of, well, metadata about your learning simulation.  It starts with the function call, then has the actual and predicted runtimes, and the final probability of inducting a lexical constraint.
+
+- weights: The weights of your general constraints, over the course of learning.  This will be a file with columns, where the first row is the column headers.  The first column is labelled 't', and contains epoch numbers.  The remaining columns are labelled with names of the general constraints, and contain those constraints' weights for each epoch of learning.
+
+- SSE: Two columns, one with 't', the epoch numbers, and the other with 'SSE', the sum squared error values for each epoch.
+
+- err: Same as SSE, but with actual error rates for each epoch.
+
+- lexicon: Two columns, 'word', containing UR's that were learned on, and 'count' indicating how many times that UR was used in learning.
+
+- lexCinfo: Each row is the name of a lexical constraint followed by that constraint's weight at each time point.  Zeros indicate that that constraint did not exist at that time point.
+
+- finalState: Final state of all the lexical items.  Columns: 'UR','Candidate', 'ObservedProb' (the observed probability of each candidate, the training data), 'PredictedProb' (the probability predicted by the final weights of the general constraints and all the lexical constraints), 'PredictedProbNoLexC' (the probability predicted for each candidate given the final general constraint weights, but without the lexical constraints), 'observedFreq', (actual frequency from input file), 'trainingFreq' (frequency with which that UR was used during training), 'lexCW' (weight of any lexical constraint preferring that candidate)
+
+`plotSSE()` Create a plot of the SSE over time from learning
+
+`plotW()` Create a plot of each constraint weight over time
+
+`plotMeanLexW()` Make two plots: one of the number of lexical constraints present in each epoch (binned according to candidates, assuming each input has candidates that all look the same, for example 'initial stress' and 'final stress'.  This will be weird if your candidates aren't structured that way).  The second plot is the mean weight of those lexical constraints, by bin.  Note that these weights wind up being pretty zipfian, so means might not be the best way to get a handle on the behavior of each bin.
+
+
 ## To-Do list:
-
-* fix `printTableau()` so that it does something more visually appealing
-  * Have it print the first n lines of tableaux, in case your tableaux are really big
-
-
-* Think about sensible 'noisy' options
-
-* Keep track of how long learning takes - may need to think about how to optimize!
-
-* Make `initializeWeights()` run automatically at some sensible point
+* Add ability to make predicted probabilities based on sampling, for results/ final state
 
 * Add to `initializeWeights()`:
-  * Ability for user to specify a list of initial weights
   * Ability to choose random weights, with user-specified parameters
 
-* Figure out how to implement regularization
+* Figure out how to implement regularization in online updates
 
+* Implement sensible command-line running
 
+* Add more numpy for faster running
 
-#### Visualization:
+* Add HG, (Noisy HG? - See Bruce's AMP talk for some sensible varieties)
 
-* Make graphs within Python
-  * figure out how to visualize weights of lexical constraints
-  	* add functionality to the tableau object, for it to take groupings as input
-  	* hover/click capability
-  * histogram of UR's chosen by sampling
-  * SSE/MSE/logLikelihood over time
-
-* Make export capability for reporting in R
 
 ## Wish list:
 
