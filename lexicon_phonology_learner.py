@@ -721,7 +721,7 @@ class Results:
 				self.lexicon[0][i].predictProbs(self.w[-1],suppressLexC=True)
 				noLexPreds=[]
 				for c in self.lexicon[0][i].candidates:
-					noLexPreds.append(c.PredictedProb)
+					noLexPreds.append(c.predictedProb)
 				# Use the final weights to predict probabilities with lexical constraints
 				self.lexicon[0][i].predictProbs(self.w[-1])
 				for c in self.lexicon[0][i].candidates:
@@ -729,7 +729,7 @@ class Results:
 					for lexicalConstraint in self.lexicon[0][i].lexC:
 						if lexicalConstraint[0]==c.surfaceForm:
 							lexCW = lexicalConstraint[1]
-					line = "\t".join([self.lexicon[0][i].ur, c.c, str(c.observedProb), str(c.predictedProb),noLexPreds[self.lexicon[0][i].candidates.index(c)], str(self.lexicon[0][i].prob), str(self.lexicon[1][i]),str(lexCW)])
+					line = "\t".join([self.lexicon[0][i].ur, c.c, str(c.observedProb), str(c.predictedProb),str(noLexPreds[self.lexicon[0][i].candidates.index(c)]), str(self.lexicon[0][i].prob), str(self.lexicon[1][i]),str(lexCW)])
 					f.write(line)
 					f.write('\n')
 

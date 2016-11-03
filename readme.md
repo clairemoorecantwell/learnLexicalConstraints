@@ -23,7 +23,7 @@ Here's a demonstration:
 
 `comparatives.initializeWeights([1,1,1,1,1,1,1,1,1])` _note:_ skip this step if you want your weights to start at 0.
 
-`comp_results = comparatives.learn(100, 100, 0.01, lexCstartW=10, lexLearnRate=0.1, decayRate=0.0001, haveLexC=True)` 10,000 iterations, split into 100 epochs. Learning rate is 0.01.  Lexically specific constraints are induced with an initial weight of 10, updated at a rate of 0.1, and decay at a rate of 0.0001 at each timestep.  Note that the default behavior of the learn() function is not to do plain perceptron learning without any lexically specific constraints.  To get the lexically specific constraints, you have to set haveLexC to True.
+`comp_results = comparatives.learn(1000, 100, 0.01, lexCstartW=10, lexLearnRate=0.1, decayRate=0.0001, decayType='static', haveLexC=True)` 100,000 iterations, split into 100 epochs. Learning rate is 0.01.  Lexically specific constraints are induced with an initial weight of 10, updated at a rate of 0.1, and decay at a rate of 0.0001 at each timestep.  Note that the default behavior of the learn() function is not to do plain perceptron learning without any lexically specific constraints.  To get the lexically specific constraints, you have to set haveLexC to True.  Also, the type of decay by default is set to 'linear', but 'static' is better and you should use that.
 
 `comp_results.save('myFirstLearningResults')`  This will create a bunch of files prefixed with 'myFirstLearningResults', in the same directory as this module.  For example, 'myFirstLearningResults_weights.txt' will contain weights of all the general constraints at the end of each epoch.
 
