@@ -21,7 +21,7 @@ Here's a demonstration:
 
 `comparatives = lex.readOTSoft('comparativesCOCA.txt')`
 
-`comparatives.initializeWeights([1,1,1,1,1,1,1,1,1])` _note_ skip this step if you want your weights to all start at 0.
+`comparatives.initializeWeights([1,1,1,1,1,1,1,1,1])` _note:_ skip this step if you want your weights to start at 0.
 
 `comp_results = comparatives.learn(100, 100, 0.01, lexCstartW=10, lexLearnRate=0.1, decayRate=0.0001, haveLexC=True)` 10,000 iterations, split into 100 epochs. Learning rate is 0.01.  Lexically specific constraints are induced with an initial weight of 10, updated at a rate of 0.1, and decay at a rate of 0.0001 at each timestep.  Note that the default behavior of the learn() function is not to do plain perceptron learning without any lexically specific constraints.  To get the lexically specific constraints, you have to set haveLexC to True.
 
