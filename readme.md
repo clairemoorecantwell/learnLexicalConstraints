@@ -13,6 +13,19 @@ To quickly get started learning, you need a couple of things
 
 * You can start off with the two example files 'comparativesToy.txt' and 'comparativesCOCA.txt'.  The former contains 100 inputs, with frequencies normally distributed, of 1-100, and all with 50% probability of taking each comparative.  Only two 'phonological' constraints are in there, and they simply prefer one or the other of the comparative forms.  'comparativesCOCA.txt' contains 214 adjectives of English, with frequencies and probabilities obtained from COCA, and 9 grammatical constraints with violations.  For more details about how these tableaux were constructed, please visit <http://http://www.phrenology.biz/emergentIdiosyncrasy/>.
 
+* Within python, you'll need to import this module, read in your tableaux file with `readOTSoft()`, initialize weights if you wish, and then use the `Tableaux.learn()` function to do some learning.  You should save the results of your learning to a results object (demonstrated below), and then use `Results.save()` to save a bunch of text files that you can then import to R or whatever program you wish for further inspection.
+
+Here's a demonstration:
+
+`import lexicon_phonology_learner as lex`
+
+`comparatives = lex.readOTSoft('comparativesCOCA.txt')`
+
+`comparatives.initializeWeights([1,1,1,1,1,1,1,1,1])` _note_ skip this step if you want your weights to all start at 0.
+
+`comp_results = comparatives.learn(100, 100, 0.01, lexCstartW=10, lexLearnRate=0.1, decayRate=0.0001, haveLexC=True)` 10,000 iterations, split into 100 epochs. Learning rate is 0.01.  Lexically specific constraints are induced with an initial weight of 10, updated at a rate of 0.1, and decay at a rate of 0.0001 at each timestep.  Note that the default behavior of the learn() function is not to do plain perceptron learning without any lexically specific constraints.  To get the lexically specific constraints, you have to set haveLexC to True.
+
+`comp_results.save('myFirstLearningResults')`  This will create a bunch of files prefixed with 'myFirstLearningResults', in the same directory as this module.  For example, 'myFirstLearningResults_weights.txt' will contain weights of all the general constraints at the end of each epoch.
 
 ## Classes:
 
@@ -216,14 +229,6 @@ Some notes on this process: At the beginning of learning, a lexical constraint i
 
 
 
-
-## Functions:
-
-`readOTSoft(file)` Right now, this just has the capability to read in an hgr-style file and turn it into a Tableaux object, and to yell at you if the file type is wrong.
-
-`perceptronUpdate(error, target, weights, rate)` error and target should be violation vectors, weights should be a vector of weights, and rate is the learning rate.  Returns an updated weight vector.
-
-
 ## Society
 use: `new_society = Society(generations,startTableaux,outputName)`
 
@@ -301,6 +306,13 @@ _methods_:
 `plotW()` Create a plot of each constraint weight over time
 
 `plotMeanLexW()` Make two plots: one of the number of lexical constraints present in each epoch (binned according to candidates, assuming each input has candidates that all look the same, for example 'initial stress' and 'final stress'.  This will be weird if your candidates aren't structured that way).  The second plot is the mean weight of those lexical constraints, by bin.  Note that these weights wind up being pretty zipfian, so means might not be the best way to get a handle on the behavior of each bin.
+
+
+## Unaffiliated functions:
+
+`readOTSoft(file)` Right now, this just has the capability to read in an hgr-style file and turn it into a Tableaux object, and to yell at you if the file type is wrong.
+
+`perceptronUpdate(error, target, weights, rate)` error and target should be violation vectors, weights should be a vector of weights, and rate is the learning rate.  Returns an updated weight vector.
 
 
 ## To-Do list:
