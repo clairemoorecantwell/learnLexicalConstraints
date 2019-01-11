@@ -1,4 +1,4 @@
-# Online learner with lexically specific constraints
+# Online learner with phonological form constraints
 
 ## Quick Start
 
