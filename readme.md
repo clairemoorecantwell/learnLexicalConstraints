@@ -7,7 +7,7 @@ To quickly get started learning, you need a couple of things
 * Some data, formatted properly
 
 |input | output | probability | tab.prob | Align-R | Align-L|...|
------------------------------------------------------------------
+|------|--------|-------------|----------|---------|--------|---|
 |banana| 010 | 0 | 532 | 0 | 1|
 |banana| 100 | 1 | 532 | 1 | 0 |
 
