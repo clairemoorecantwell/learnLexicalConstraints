@@ -8,8 +8,10 @@ To quickly get started learning, you need a couple of things
 
 |input | output | probability | tab.prob | Align-R | Align-L|...|
 |------|--------|-------------|----------|---------|--------|---|
-|banana| 010 | 0 | 532 | 0 | 1|
-|banana| 100 | 1 | 532 | 1 | 0 |
+|banana| 010 | 1 | 547 | 0 | 1|
+|banana| 100 | 0 | 547 | 1 | 0 |
+|recipe| 010 | 0 | 388 | 0 | 1 |
+|recipe| 100 | 1 | 388 | 1 | 0 |
 
   * first line, tab-separated: `input` `output`...
   * `tab.prob` and (hidden structure) are optional, just leave those columns out if your don't want to use them
