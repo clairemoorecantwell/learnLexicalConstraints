@@ -12,6 +12,7 @@ To quickly get started learning, you need a couple of things
 |banana| 100 | 0 | 547 | 1 | 0 |
 |recipe| 010 | 0 | 388 | 0 | 1 |
 |recipe| 100 | 1 | 388 | 1 | 0 |
+| ... | ... | ...| ... | ... | ... |
 
   * first line, tab-separated: `input` `output`...
   * `tab.prob` and (hidden structure) are optional, just leave those columns out if your don't want to use them
