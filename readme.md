@@ -5,6 +5,12 @@
 To quickly get started learning, you need a couple of things
 
 * Some data, formatted properly
+
+|input | output | probability | tab.prob | Align-R | Align-L|...|
+-----------------------------------------------------------------
+|banana| 010 | 0 | 532 | 0 | 1|
+|banana| 100 | 1 | 532 | 1 | 0 |
+
   * first line, tab-separated: `input` `output`...
   * `tab.prob` and (hidden structure) are optional, just leave those columns out if your don't want to use them
   * input column should have something on every line: each line is a candidate, and each the input column should contain the UR for that candidate.  Each UR needs to be unique.
