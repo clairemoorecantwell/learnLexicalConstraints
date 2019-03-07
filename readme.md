@@ -41,7 +41,7 @@ Here's a demonstration:
 ### candidate
 use: `new_candidate = candidate(c,violations,observedProb,surfaceForm=None)`
 
-**c:** the candidate
+**c:** the candidate, a surface form
 
 **violations:** list of violations
 
@@ -60,9 +60,9 @@ use: `new_candidate = candidate(c,violations,observedProb,surfaceForm=None)`
 ### LexEntry
 use: `new_LexEntry = LexEntry(inpt,prob=1,pfc=None)`
 
-**inpt:** a string, the input, or the UR if you like
+**inpt:** a string, the input, or the UR if you like.  If operating this program using Correspondence-Free MaxEnt, just think of this as a label for each lexical entry.  It has no phonological value, but it's still useful to have meaningful labels that a human can make sense of, to distinguish different lexical items from each other.
 
-**prob:** you can use this attribute to define a token frequency for this input, for example if you want to sample or weight inputs by token frequency
+**prob:** you can use this attribute to define a token frequency for this lexical entry, for example if you want to sample or weight words by token frequency
 
 **pfc:** This starts out empty, and can stay empty if you're not using PFCs.  It should typically not be defined in advance, but you can if you need to.  It should wind up being a list of tuples, of the form `(output, weight)` where `output` is a string corresponding to the output that the PFC demands, and `weight` is the weight on that constraint.  __PFCs are hitched to inputs, and are not stored with the other constraints.  This might need to be changed to allow for batch learning __
 
@@ -92,17 +92,17 @@ use: `new_LexEntry = LexEntry(inpt,prob=1,pfc=None)`
 
 `checkViolationLength()` checks if all the violation vectors of the candidates are the same length.
 
-`calculateHarmony(w,t=None,decayRate=None,decayType=None,suppressLexC=False)` calculates the harmony of each candidate, using w, the vector of weights of the markedness constraints.  If `decayRate` is set to something besides None, it begins by calling `decayPFC`, which is why it takes `t`, `decayRate`, and `decayType` as parameters.  If `suppressPFC` is set to True, this will calculate harmony without the phonological form constraints.  This can be useful for comparing predictions.
+`calculateHarmony(w,t=None,decayRate=None,decayType=None,suppressPFC=False)` calculates the harmony of each candidate, using w, the vector of weights of the markedness constraints.  If `decayRate` is set to something besides None, it begins by calling `decayPFC`, which is why it takes `t`, `decayRate`, and `decayType` as parameters.  If `suppressPFC` is set to True, this will calculate harmony without the phonological form constraints.  This can be useful for comparing predictions.
 
-`predictProbs(w,t=None,decayRate=None,decayType=None, suppressPFC=False)` calculates the predicted probabilities of each candidate according to a vector of weights `w`.  Begins by calling `calculateHarmony`, which can call `decayLexC`, hence you can give it the appropriate parameters.  If `suppressLexC` is True, probabilities will be predicted without the lexical constraints.  Note that if you do this, your UR's will have the wrong predicted probabilities until you run this again without supression.  So be careful.
+`predictProbs(w,t=None,decayRate=None,decayType=None, suppressPFC=False)` calculates the predicted probabilities of each candidate according to a vector of weights `w`.  Begins by calling `calculateHarmony`, which can call `decayPFC`, hence you can give it the appropriate parameters.  If `suppressPFC` is True, probabilities will be predicted without the lexical constraints.  Note that if you do this, your UR's will have the wrong predicted probabilities until you run this again without supression.  So be careful.
 
 `getPredWinner(theory)` Get a winner based on your theory - if `MaxEnt` (currently the only one implemented), sample to get that winner.  Returns a string that's the actual surface form winner, as well as the entire candidate object that's the winner.
 
 `getObsWinner(theory)` Get an observed winner by sampling from the observed distribution over candidates.  If there's a sole observed winner, that one will always be returned by this function.  Returns a string that's the surface form of the observed winner, and also returns the entire candidate object.
 
-`compareObsPred(theory,w,strategy = 'sample', t=None,decayRate=None,decayType=None)` Compares observed to predicted winner, using one of two strategies.  Either samples from both the predicted and the observed distributions, and compares those samples to see if there's an error, or if `strategy` = `HDI`, it samples from the predicted distribution, and then checks whether that sampled form is one of the most probable candidates for in the observed distribution.
+`compareObsPred(theory,w,strategy = 'sample', t=None,decayRate=None,decayType=None)` Compares observed to predicted winner, using one of two strategies.  Either samples from both the predicted and the observed distributions, and compares those samples to see if there's an error, or if `strategy` = `HDI`, it samples from the predicted distribution, and then checks whether that sampled form is one of the most probable candidates in the observed distribution.
 
-If `sample`, the default, it calls `getPredWinner` and `getObsWinner`, and compares the observed to the predicted winner to see if there's an error.  The function also calls `predictProbs`, which calls `calculateHarmony` and `decayLexC`, so altogether, it calculates the current values for the lexical constraints, and it calculates harmonies and probabilities given the current set of both general and lexical constraint weights, and then it samples and sees if the observed thing matches the predicted thing.  Returns whether or not there was an error (0 if no error, 1 if error), and the candidate objects for the observed candidate and the predicted candidate.  NOTE ON HIDDEN STRUCTURE:  **hidden structure still in progress.  check back later ** 
+If `sample`, the default, it calls `getPredWinner` and `getObsWinner`, and compares the observed to the predicted winner to see if there's an error.  The function also calls `predictProbs`, which calls `calculateHarmony` and `decayPFC`, so altogether, it calculates the current values for the lexical constraints, and it calculates harmonies and probabilities given the current set of both general and lexical constraint weights, and then it samples and sees if the observed thing matches the predicted thing.  Returns whether or not there was an error (0 if no error, 1 if error), and the candidate objects for the observed candidate and the predicted candidate.  NOTE ON HIDDEN STRUCTURE:  **hidden structure still in progress.  check back later ** 
 
 
 
@@ -112,11 +112,11 @@ use: `new_tableaux = Tableaux(theory='MaxEnt')`
 
 _attributes_:
 
-**urList:** list of objects of class `UR`
+**lexList:** list of objects of class `LexEntry`
 
-**urIDlist:** list of strings, that are the strings of the URs
+**lexIDlist:** list of strings, the `inpt` that goes with each lexical entry
 
-**urProbsList:** List of floats, aligned to the list of URs - each number is the 'lexical frequency' of that UR, or the weight at which you want it to be sampled for learning.  These can by any real positive number (or 0) - for sampling the list will be converted to a proper probability distribution.
+**lexProbsList:** List of floats, aligned to the list of URs - each number is the 'lexical frequency' of that UR, or the weight at which you want it to be sampled for learning.  These can by any real positive number (or 0) - for sampling the list will be converted to a proper probability distribution.
 
 **theory:** Right now, only 'MaxEnt' is implemented.  Hopefully in the future, we can do at least Noisy HG and regular HG.
 
