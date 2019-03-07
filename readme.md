@@ -16,23 +16,23 @@ To quickly get started learning, you need a couple of things
 
   * first line, tab-separated: `input` `output`...
   * `tab.prob` and (hidden structure) are optional, just leave those columns out if your don't want to use them
-  * input column should have something on every line: each line is a candidate, and each the input column should contain the UR for that candidate.  Each UR needs to be unique.
+  * input column should have something on every line: each line is a candidate, and each the input column should contain the input for that candidate.  Each input needs to be unique.  If you run the model without PFC's, as a simple MaxEnt gradual learner, this would be the UR.
   * The violation columns can contain any integers, or spaces.  Spaces will be converted to 0's and integers will be converted to negative integers.
-* Some way to run Python (2.7), ideally that can plot, so that the plotting functions will work.  I use ipython <https://ipython.org>.  If you can install numpy (<http://www.numpy.org/>), and do it in a way that you get access to the numpy.random.choice() function, the whole thing will run much quicker.  You might need to install some kind of package like Anaconda (<https://www.continuum.io/downloads>) to get the numpy installation to run smoothly.
+* Some way to run Python (Version 3), ideally that can plot, so that the plotting functions will work.  I use ipython <https://ipython.org>.  If you can install numpy (<http://www.numpy.org/>), and do it in a way that you get access to the numpy.random.choice() function, the whole thing will run much quicker.  You might need to install some kind of package like Anaconda (<https://www.continuum.io/downloads>) to get the numpy installation to run smoothly.
 
-* You can start off with the two example files 'comparativesToy.txt' and 'comparativesCOCA.txt'.  The former contains 100 inputs, with frequencies normally distributed, of 1-100, and all with 50% probability of taking each comparative.  Only two 'phonological' constraints are in there, and they simply prefer one or the other of the comparative forms.  'comparativesCOCA.txt' contains 214 adjectives of English, with frequencies and probabilities obtained from COCA, and 9 grammatical constraints with violations.  For more details about how these tableaux were constructed, please visit <http://http://www.phrenology.biz/emergentIdiosyncrasy/>.
+* You can start off with the two example files 'comparativesToy.txt' and 'comparativesCOCA.txt'.  The former contains 100 inputs, with frequencies uniformly distributed, of 1-100, and all with 50% probability of taking each comparative.  Only two 'phonological' constraints are in there, and they simply prefer one or the other of the comparative forms.  'comparativesCOCA.txt' contains 214 adjectives of English, with frequencies and probabilities obtained from COCA, and 9 grammatical constraints with violations.  For more details about how these tableaux were constructed, please visit <http://http://www.phrenology.biz/emergentIdiosyncrasy/>.
 
-* Within python, you'll need to import this module, read in your tableaux file with `readOTSoft()`, initialize weights if you wish, and then use the `Tableaux.learn()` function to do some learning.  You should save the results of your learning to a results object (demonstrated below), and then use `Results.save()` to save a bunch of text files that you can then import to R or whatever program you wish for further inspection.
+* Within python, you'll need to import the GLaPL module, read in your tableaux file with `readOTSoft()`, initialize weights if you wish, and then use the `Tableaux.learn()` function to do some learning.  You should save the results of your learning to a results object (demonstrated below), and then use `Results.save()` to save a bunch of text files that you can then import to R or whatever program you wish for further inspection.
 
 Here's a demonstration:
 
-`import lexicon_phonology_learner as lex`
+`import GLaPL`
 
-`comparatives = lex.readOTSoft('comparativesCOCA.txt')`
+`comparatives = GLaPL.readOTSoft('comparativesCOCA.txt')`
 
 `comparatives.initializeWeights([1,1,1,1,1,1,1,1,1])` _note:_ skip this step if you want your weights to start at 0.
 
-`comp_results = comparatives.learn(1000, 100, 0.01, lexCstartW=10, lexLearnRate=0.1, decayRate=0.0001, decayType='static', haveLexC=True)` 100,000 iterations, split into 100 epochs. Learning rate is 0.01.  Lexically specific constraints are induced with an initial weight of 10, updated at a rate of 0.1, and decay at a rate of 0.0001 at each timestep.  Note that the default behavior of the learn() function is not to do plain perceptron learning without any lexically specific constraints.  To get the lexically specific constraints, you have to set haveLexC to True.  Also, the type of decay by default is set to 'linear', but 'static' is better and you should use that.
+`comp_results = comparatives.learn(1000, 100, 0.01, PFCstartW=10, pfcLearnRate=0.1, PFCSample=True, PFCSampleSize=20, decayRate=0.0001, decayType='static', havePFC=True)` 100,000 iterations, split into 100 epochs. Learning rate is 0.01.  Phonological Form Constraints (PFCs) are induced with an initial weight of 10, updated at a rate of 0.1, and decay at a rate of 0.0001 at each timestep.  Note that the default behavior of the learn() function is to do plain perceptron learning without any phonological form constraints.  To get the PFCs, you have to set havePFC to True.  Also, decayType has a few settings, but 'static' is the most straightforward (and definitely not buggy).
 
 `comp_results.save('myFirstLearningResults')`  This will create a bunch of files prefixed with 'myFirstLearningResults', in the same directory as this module.  For example, 'myFirstLearningResults_weights.txt' will contain weights of all the general constraints at the end of each epoch.
 
@@ -45,7 +45,7 @@ use: `new_candidate = candidate(c,violations,observedProb,surfaceForm=None)`
 
 **violations:** list of violations
 
-**surfaceForm:** for use in hidden structure situations, this is the surface form that corresponds to the actual candidate.  For example, a stress candidate might be (10)0, and its surface form 100.  The surface form for (1)00, which has a different violation profile, would also be 100.
+**surfaceForm:** for use in (future!) hidden structure situations, this is the surface form that corresponds to the actual candidate.  For example, a stress candidate might be (10)0, and its surface form 100.  The surface form for (1)00, which has a different violation profile, would also be 100.
 
 **observedProb:** Value ranging from 0-1 indicating the observed probability of that candidate.  If this candidate is the sole observed output for its UR, this value should be 1.  If the candidate is never observed, this should be 0.  Except in hidden structure situations, these values for any given UR ought to sum to one.  Also, this is the value that whatever learning process will try to match.
 
@@ -57,18 +57,18 @@ use: `new_candidate = candidate(c,violations,observedProb,surfaceForm=None)`
 
 `checkViolationsSign()` runs automatically on initialization of a new instance of the class, and converts violation profiles to negative floats.  It also converts blanks to 0's, but it will throw an error if any violations are made of text that can't be converted to floats.
 
-### UR
-use: `new_UR = UR(ur,prob=1,lexC=None)`
+### LexEntry
+use: `new_LexEntry = LexEntry(inpt,prob=1,pfc=None)`
 
-**ur:** a string, the UR, or the input if you prefer (Note: it's called UR because 'input' is a function in python, not because of any theoretical commitments.)
+**inpt:** a string, the input, or the UR if you like
 
-**prob:** you can use this attribute to define a token frequency for this UR, for example if you want to sample or weight URs/inputs by token frequency
+**prob:** you can use this attribute to define a token frequency for this input, for example if you want to sample or weight inputs by token frequency
 
-**lexC:** This starts out empty, and can stay empty if you're not using lexically-specific constraints.  It should typically not be defined in advance, but you can if you need to.  It should wind up being a list of tuples, of the form `(output, weight)` where `output` is a string corresponding to the output that the lexically-specific constraint demands, and `weight` is the weight on that constraint.  __Lexical constraints are hitched to URs/inputs, and are not stored with the other constraints.  This might need to be changed to allow for batch learning __
+**pfc:** This starts out empty, and can stay empty if you're not using PFCs.  It should typically not be defined in advance, but you can if you need to.  It should wind up being a list of tuples, of the form `(output, weight)` where `output` is a string corresponding to the output that the PFC demands, and `weight` is the weight on that constraint.  __PFCs are hitched to inputs, and are not stored with the other constraints.  This might need to be changed to allow for batch learning __
 
-`UR` also has the following attributes:
+`LexEntry` also has the following attributes:
 
-**candidates:** A list containing objects of the class `candidate`. This has to be populated after the UR object is created.
+**candidates:** A list containing objects of the class `candidate`. This has to be populated after the LexEntry object is created.
 
 **probDenom:** This is for calculating MaxEnt probability for candidates of this input.  It's just the denominator for that calculation: sum(e^(-H))
 
@@ -82,19 +82,19 @@ use: `new_UR = UR(ur,prob=1,lexC=None)`
 
 **probableCandidates:** a list of all the candidates with observed probabilities greater than 5%, or 0.05
 
-`UR` also has the following methods:
+`LexEntry` also has the following methods:
 
 `addCandidate(cand)` adds a candidate object to the list of candidates
 
 `getProbableCandidates()` fills *probableCandidates* with the surface forms of all candidates whith observed probabilities greater than 5%.  This can be seen to approximate a Bayesian "Highest Density Interval" or "Credible Interval" of output candidates.
 
-`decayLexC(t,decayRate,decayType='static')` Decays the lexical constraints according to how much time has passed since the UR was last observed.  The `decayRate` is a parameter defining how much they decay by.  If it's 0, they won't decay at all.  The lexical constraint weights will decay according to the equation: *new_weight = old_weight - (t-`lastSeen`) X decayRate*, and if the weight decays to or below zero, the lexical constraint will get removed. The `decayType` parameter defaults to `static`, yielding the above behavior.  Other options are `linear`, meaning the amount of decay depends linearly on the weight of the lexical constraint.  (less decay for lower weights), and `nonlinear`, meaning the amount of decay depends linearly on the square of the weight of the lexical constraint.
+`decayPFC(t,decayRate,decayType='static')` Decays the phonological form constraints according to how much time has passed since the LexEntry was last observed.  The `decayRate` is a parameter defining how much they decay by.  If it's 0, they won't decay at all.  If `decayType` is set to  'static', the PFC weights will decay according to the equation: *new_weight = old_weight - (t-`lastSeen`) X decayRate*, and if the weight decays to or below zero, the lexical constraint will get removed. The `decayType` parameter defaults to `static`, yielding the above behavior.  Other options are `linear`, meaning the amount of decay depends linearly on the weight of the lexical constraint.  (less decay for lower weights), and `nonlinear`, meaning the amount of decay depends linearly on the square of the weight of the lexical constraint.
 
-`checkViolationLength()` checks if all the violation vectors of the candidates are the same length ** Not written yet**
+`checkViolationLength()` checks if all the violation vectors of the candidates are the same length.
 
-`calculateHarmony(w,t=None,decayRate=None,decayType=None,suppressLexC=False)` calculates the harmony of each candidate, using w, the vector of weights of the markedness constraints.  If `decayRate` is set to something besides None, it begins by calling `decayLexC`, which is why it takes `t`, `decayRate`, and `decayType` as parameters.  If `suppressLexC` is set to True, this will calculate harmony without the lexical constraints.  This can be useful for comparing predictions.
+`calculateHarmony(w,t=None,decayRate=None,decayType=None,suppressLexC=False)` calculates the harmony of each candidate, using w, the vector of weights of the markedness constraints.  If `decayRate` is set to something besides None, it begins by calling `decayPFC`, which is why it takes `t`, `decayRate`, and `decayType` as parameters.  If `suppressPFC` is set to True, this will calculate harmony without the phonological form constraints.  This can be useful for comparing predictions.
 
-`predictProbs(w,t=None,decayRate=None,decayType=None, suppressLexC=False)` calculates the predicted probabilities of each candidate according to a vector of weights `w`.  Begins by calling `calculateHarmony`, which can call `decayLexC`, hence you can give it the appropriate parameters.  If `suppressLexC` is True, probabilities will be predicted without the lexical constraints.  Note that if you do this, your UR's will have the wrong predicted probabilities until you run this again without supression.  So be careful.
+`predictProbs(w,t=None,decayRate=None,decayType=None, suppressPFC=False)` calculates the predicted probabilities of each candidate according to a vector of weights `w`.  Begins by calling `calculateHarmony`, which can call `decayLexC`, hence you can give it the appropriate parameters.  If `suppressLexC` is True, probabilities will be predicted without the lexical constraints.  Note that if you do this, your UR's will have the wrong predicted probabilities until you run this again without supression.  So be careful.
 
 `getPredWinner(theory)` Get a winner based on your theory - if `MaxEnt` (currently the only one implemented), sample to get that winner.  Returns a string that's the actual surface form winner, as well as the entire candidate object that's the winner.
 
@@ -306,7 +306,7 @@ _methods_:
 
 - lexicon: Two columns, 'word', containing UR's that were learned on, and 'count' indicating how many times that UR was used in learning.
 
-- lexCinfo: Each row is the name of a lexical constraint followed by that constraint's weight at each time point.  Zeros indicate that that constraint did not exist at that time point.
+- PFCinfo: Each row is the name of a lexical constraint followed by that constraint's weight at each time point.  Zeros indicate that that constraint did not exist at that time point.
 
 - finalState: Final state of all the lexical items.  Columns: 'UR','Candidate', 'ObservedProb' (the observed probability of each candidate, the training data), 'PredictedProb' (the probability predicted by the final weights of the general constraints and all the lexical constraints), 'PredictedProbNoLexC' (the probability predicted for each candidate given the final general constraint weights, but without the lexical constraints), 'observedFreq', (actual frequency from input file), 'trainingFreq' (frequency with which that UR was used during training), 'lexCW' (weight of any lexical constraint preferring that candidate)
 
